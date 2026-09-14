@@ -15,7 +15,7 @@
     },
     "scripts":
     {
-      "export": "@php bin/t3PageTreeExport"
+      "t3PageTreeExport": "@php bin/t3PageTreeExport"
     },
     "require": {
         "php": "^8.0"

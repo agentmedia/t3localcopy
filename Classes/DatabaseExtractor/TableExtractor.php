@@ -220,11 +220,10 @@ class TableExtractor {
         return $firstRow;
     }
 
-    protected function executeSelect(string $tableName,string $whereQuery, array $placeholderValues, string $cols = '*'): ?array {
+    protected function executeSelect(string $tableName,string $whereQuery, array $placeholderValues, string $cols = '*'): array {
         $selectQuery = "SELECT " . $cols . " FROM " . $tableName . " WHERE " . $whereQuery;
         $stmt = $this->pdo->prepare($selectQuery);
         $stmt->execute($placeholderValues);
-        $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        return $data ?: null;
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 }

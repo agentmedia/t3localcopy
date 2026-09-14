@@ -13,10 +13,11 @@
             "AgentMedia\\T3LocalCopy\\": "Classes/"
         }
     },
-    "scripts":
-    {
-      "t3PageTreeExport": "@php bin/t3PageTreeExport"
-    },
+    
+    "bin": [
+      "bin/t3PageTreeExport"
+    ],
+
     "require": {
         "php": "^8.0"
     },

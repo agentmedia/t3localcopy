@@ -54,7 +54,7 @@ class TableExtractor {
             $this->addUidsForeignTableRelations($record);
             $this->addUidsMultipleForeignTableRelations($record);
             $this->addForeignChildRelations($record);
-            if ((string)$record[$this->tableConfig->getLanguageColumn()] === '0') {
+            if (!$this->tableConfig->getLanguageColumn() || (string)$record[$this->tableConfig->getLanguageColumn()] === '0') {
                 $this->addParentRecord($record);
                 $this->addForeignParentRelations($record);
                 $this->collectLanguageOverlayInsertQueries($uid);
@@ -215,7 +215,7 @@ class TableExtractor {
         $data = $this->executeSelect($tableName, $whereQuery, $placeholderValues, '*');
         $firstRow = $data[0] ?? null;
         if ($firstRow && $this->insertCollector->addInsert($tableName, $firstRow, $this->tableConfig->getPrimaryColumn())) {
-            EventHandler::dispatchEvent(self::EVENT_INSERT_QUERY_ADDED, ['tableName' => $tableName, 'row' => $firstRow, 'tableConfig' => $this->tableConfig]);
+            EventHandler::dispatchEvent(self::EVENT_INSERT_QUERY_ADDED, ['tableName' => $tableName, 'data' => $firstRow, 'tableConfig' => $this->tableConfig]);
         }
         return $firstRow;
     }

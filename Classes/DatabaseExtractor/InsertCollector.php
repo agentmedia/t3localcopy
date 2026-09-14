@@ -23,7 +23,7 @@ class InsertCollector
         }
         $primaryKeyValue = $data[$primaryKeyColumn] ?? null;
         if (!$primaryKeyValue) {
-            throw new \InvalidArgumentException("Primary key value for column '$primaryKeyColumn' is missing in the provided data.");
+            throw new \InvalidArgumentException("Primary key value for column '$primaryKeyColumn' is missing in the provided data of table '$table'. Given: ".  json_encode($data));
         }
         if (isset($this->inserts[$table][$primaryKeyValue])) { 
             return false;

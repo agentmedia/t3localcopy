@@ -1,0 +1,92 @@
+# Composer
+/vendor/
+composer.phar
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.dist
+*.local.php
+
+# Logs
+*.log
+logs/
+log/
+
+# PHP caches and generated files
+.phpunit.result.cache
+.php-cs-fixer.cache
+.phpstan.cache
+.phpstan/
+psalm-baseline.xml
+.phpactor.json
+
+# Test coverage and reports
+/coverage/
+/build/
+/reports/
+clover.xml
+coverage.xml
+phpunit.xml.coverage
+
+# IDEs and editors
+.idea/
+.vscode/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Operating system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+.cache/
+tmp/
+temp/
+
+# Framework and application-specific generated files
+/storage/*
+/var/*
+/bootstrap/cache/*
+/public/storage
+/public/build/
+/public/hot
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Docker overrides and local configuration
+docker-compose.override.yml
+docker-compose.local.yml
+
+# npm/yarn/pnpm dependencies and logs, if frontend tooling is used
+/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.yarn/
+.pnpm-store/
+
+# Build artifacts
+/dist/
+/out/
+/.phpenv
+
+# Ignore all DDEV files
+.ddev/

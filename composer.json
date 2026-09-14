@@ -1,0 +1,20 @@
+{
+  "name": "agentmedia/t3localcopy",
+  "description": "Creates SQL and file list that enables to create a copy of a Typo3 installation pagetree into a blank installation",
+  "authors": [
+    {
+      "name": "Klaus Potzesny",
+      "email": "info@agent-media.com"
+    }
+  ],
+   "autoload": {
+        "psr-4": {
+            "AgentMedia\\T3LocalCopy\\": "Classes/"
+        }
+    },
+    "scripts":
+    {
+      "export": "@php bin/t3PageTreeExport"
+    },
+  "minimum-stability": "stable"
+}

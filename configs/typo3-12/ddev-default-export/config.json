@@ -1,0 +1,129 @@
+{
+    "common": {
+        "rootPageUid": 1,
+        "noFiles": false
+    },
+    "db": {
+        "dsn": "mysql:host=db;dbname=db",
+        "username": "db",
+        "password": "db"
+    },
+    "tableConfigRegistry": [
+        {
+        "table": "tt_content",
+        "l10nParentColumn": "l18n_parent",
+        "foreignParentRelations": [
+            {
+                "column": "pid",
+                "table": "pages"
+            }
+        ],
+        "uidsForeignTableRelations": [
+            {
+                "column": "records",
+                "table": "tt_content",
+                "recordCondition": {
+                    "__type__": "DirectRecordCondition",
+                    "CType": "shortcut"
+                }
+            }
+        ],
+         "foreignChildRelations": [
+                {
+                    "column": "uid_foreign",
+                    "table": "sys_file_reference",
+                    "additionalConditions": {
+                        "fieldname": "image",
+                        "tablenames": "tt_content"
+                    },
+                    "recordCondition": {
+                        "__type__": "DirectRecordCondition",
+                        "CType": "image"
+                    }
+                },
+                {
+                    "column": "uid_foreign",
+                    "table": "sys_file_reference",
+                    "additionalConditions": {
+                        "fieldname": "media",
+                        "tablenames": "tt_content"
+                    },
+                    "recordCondition": {
+                        "__type__": "DirectRecordCondition",
+                        "CType": "media"
+                    }
+                },
+                {
+                    "column": "recuid",
+                    "table": "sys_history",
+                    "additionalConditions": {
+                        "tablename": "tt_content"
+                    }
+                }
+            ]
+            
+        },
+        {
+            "table": "pages",
+            "pidColumn": "pid",
+            "includeParents": true,
+            "foreignChildRelations": [
+               {
+                   "column": "uid",
+                   "table": "sys_file_reference",
+                   "additionalConditions": {
+                       "fieldname": "media",
+                       "tablenames": "pages"
+                   }
+               },
+               {
+                   "column": "pid",
+                   "table": "tt_content"
+               },
+               {
+                   "column": "pid",
+                   "table": "sys_template"
+               },
+               {
+                   "column": "recuid",
+                   "table": "sys_history",
+                   "additionalConditions": {
+                       "tablename": "pages"
+                   }
+               }
+           ]
+        },
+
+        {
+            "table": "sys_file_reference",
+            "l10nParentColumn": "",
+            "languageColumn": "",
+            "uidsForeignTableRelations": [
+                {
+                    "column": "uid_local",
+                    "table": "sys_file"
+                }
+            ]
+
+        },
+        {
+            "table": "sys_file",
+            "l10nParentColumn": "",
+            "languageColumn": ""
+        },
+        {
+            "table": "sys_history",
+            "l10nParentColumn": "",
+            "languageColumn": ""
+        },
+        {
+            "table": "sys_file_storage",
+            "l10nParentColumn": "",
+            "languageColumn": "",
+            "explicitSelectQuery": "1=1"
+        },
+        {
+            "table": "sys_file_metadata"
+        }
+    ]
+}

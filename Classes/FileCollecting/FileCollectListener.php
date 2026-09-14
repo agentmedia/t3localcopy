@@ -51,11 +51,10 @@ class FileCollectListener implements EventListenerInterface {
         $configDom = new \DOMDocument();
         $configDom->loadXML($storageRecord['configuration']);
 
-        $basePathNodes = $configDom->getElementsByTagName('basePath');
-        if ($basePathNodes->length === 0) {
-            return $identifier;
-        }
-        $basePath = $basePathNodes->item(0)->nodeValue;
+        $xpath = new \DOMXpath($configDom);
+        $elements = $xpath->query("//*[@index='basePath']/value");
+        $pathEl = $elements ? current($elements) : null;
+        $basePath = $pathEl ? $pathEl->nodeValue : '';
         return rtrim($basePath, '/') . '/' . ltrim($identifier, '/');
     }
 

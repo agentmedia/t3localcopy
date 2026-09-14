@@ -215,7 +215,7 @@ class TableExtractor {
         $data = $this->executeSelect($tableName, $whereQuery, $placeholderValues, '*');
         $firstRow = $data[0] ?? null;
         if ($firstRow && $this->insertCollector->addInsert($tableName, $firstRow, $this->tableConfig->getPrimaryColumn())) {
-            EventHandler::dispatchEvent(self::EVENT_INSERT_QUERY_ADDED, $tableName, $firstRow, $this->tableConfig);
+            EventHandler::dispatchEvent(self::EVENT_INSERT_QUERY_ADDED, ['tableName' => $tableName, 'row' => $firstRow, 'tableConfig' => $this->tableConfig]);
         }
         return $firstRow;
     }

@@ -12,10 +12,10 @@ final class EventHandler {
         self::$listeners[$name][] = $listener;
     }
 
-    public static function dispatchEvent(string $name, ...$args) {
+    public static function dispatchEvent(string $name, array$args) {
         if (isset(self::$listeners[$name])) {
             foreach (self::$listeners[$name] as $listener) {
-                $listener->handleEvent(...$args);
+                $listener->handleEvent($args);
             }
         }
     }

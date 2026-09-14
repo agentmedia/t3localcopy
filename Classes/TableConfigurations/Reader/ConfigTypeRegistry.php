@@ -2,7 +2,6 @@
 
 namespace AgentMedia\T3LocalCopy\TableConfigurations\Reader;
 
-use AgentMedia\T3LocalCopy\Config\Condition\RecordConditionInterface;
 
 class ConfigTypeRegistry {
 
@@ -10,8 +9,8 @@ class ConfigTypeRegistry {
     private array $registry = [];
 
     public function register(string $className, string $type) {
-        if (!class_exists($className) || !is_subclass_of($className, RecordConditionInterface::class)) {
-            throw new \InvalidArgumentException("Class $className does not exist or does not implement RecordConditionInterface.");
+        if (!class_exists($className)) {
+            throw new \InvalidArgumentException("Class $className does not exist.");
         }
 
         $this->registry[$type] = $className;

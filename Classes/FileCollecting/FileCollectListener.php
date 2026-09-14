@@ -53,8 +53,8 @@ class FileCollectListener implements EventListenerInterface {
 
         $xpath = new \DOMXpath($configDom);
         $elements = $xpath->query("//*[@index='basePath']/value");
-        $pathEl = $elements ? current($elements) : null;
-        $basePath = $pathEl ? $pathEl->nodeValue : '';
+        $pathEl = $elements->length > 0 ? $elements->item(0) : null;
+        $basePath = $pathEl ? $pathEl->textContent : '';
         return rtrim($basePath, '/') . '/' . ltrim($identifier, '/');
     }
 

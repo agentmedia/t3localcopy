@@ -1,6 +1,7 @@
 {
   "name": "agentmedia/t3localcopy",
   "description": "Creates SQL and file list that enables to create a copy of a Typo3 installation pagetree into a blank installation",
+  "type": "library",
   "authors": [
     {
       "name": "Klaus Potzesny",

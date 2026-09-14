@@ -213,12 +213,11 @@ class TableExtractor {
 
     protected function addInsertQueryFromSelect(string $tableName,string $whereQuery, array $placeholderValues): ?array {
         $data = $this->executeSelect($tableName, $whereQuery, $placeholderValues, '*');
-        if ($data) {
-            if ($this->insertCollector->addInsert($tableName, $data, $this->tableConfig->getPrimaryColumn())) {
-                EventHandler::dispatchEvent(self::EVENT_INSERT_QUERY_ADDED, $tableName, $data, $this->tableConfig);
-            }
+        $firstRow = $data[0] ?? null;
+        if ($firstRow && $this->insertCollector->addInsert($tableName, $firstRow, $this->tableConfig->getPrimaryColumn())) {
+            EventHandler::dispatchEvent(self::EVENT_INSERT_QUERY_ADDED, $tableName, $firstRow, $this->tableConfig);
         }
-        return $data;
+        return $firstRow;
     }
 
     protected function executeSelect(string $tableName,string $whereQuery, array $placeholderValues, string $cols = '*'): ?array {

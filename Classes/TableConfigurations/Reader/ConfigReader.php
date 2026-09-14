@@ -151,12 +151,12 @@ class ConfigReader {
 
     private function createTableConfig(array $tableConfigData): TableConfig {
         $table = $tableConfigData['table'] ?? '';
-        $primaryColumn = $tableConfigData['primaryColumn'] ?? '';
+        $primaryColumn = $tableConfigData['primaryColumn'] ?? 'uid';
         if (empty($table)) {
             throw new \InvalidArgumentException('Invalid table config: missing tableName.');
         }
         if (empty($primaryColumn)) {
-            throw new \InvalidArgumentException('Invalid table config: missing primaryColumn.');
+            throw new \InvalidArgumentException('Invalid table config: missing primaryColumn for table ' . $table . '.');
         }
         return new TableConfig(
             $table,

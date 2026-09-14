@@ -22,7 +22,7 @@ final class ExportCommand
     public function execute()
     {   
         $cliArguments = $this->readCliArguments();
-        $rootPageUid = (int)$cliArguments['rootPageUid'] ?? 0;
+        $rootPageUid = (int)($cliArguments['rootPageUid'] ?? 0);
         $configFile = $cliArguments['configFile'];
         $filesFile = $cliArguments['filesFile'] ?? $this->defaultBaseDir . '/files.txt';
         $insertsFile = $cliArguments['insertsFile'] ?? $this->defaultBaseDir . '/inserts.sql';

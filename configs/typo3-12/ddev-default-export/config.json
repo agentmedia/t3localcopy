@@ -24,7 +24,9 @@
                 "table": "tt_content",
                 "recordCondition": {
                     "__type__": "DirectRecordCondition",
-                    "CType": "shortcut"
+                    "arguments": {
+                        "CType": "shortcut"
+                    }
                 }
             }
         ],
@@ -38,7 +40,9 @@
                     },
                     "recordCondition": {
                         "__type__": "DirectRecordCondition",
-                        "CType": "image"
+                        "arguments": {
+                            "CType": "image"
+                        }
                     }
                 },
                 {
@@ -50,7 +54,9 @@
                     },
                     "recordCondition": {
                         "__type__": "DirectRecordCondition",
-                        "CType": "media"
+                        "arguments": {
+                            "CType": "media"
+                        }
                     }
                 },
                 {

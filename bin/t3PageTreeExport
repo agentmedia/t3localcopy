@@ -3,15 +3,18 @@
 
 declare(strict_types=1);
 
+use AgentMedia\T3LocalCopy\Export\ExportCommand;
+
 $autoloadPath = $_composer_autoload_path
     ?? dirname(__DIR__, 2) . '/autoload.php';
-    
+
+$binDir = $_composer_bin_dir ?? __DIR__;
+
 require $autoloadPath;
-use AgentMedia\T3LocalCopy\Export\ExportCommand;
 
 $command = null;
 try {
-    $command = new ExportCommand(__DIR__);
+    $command = new ExportCommand($binDir);
     $command->execute();
 } catch (\Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";

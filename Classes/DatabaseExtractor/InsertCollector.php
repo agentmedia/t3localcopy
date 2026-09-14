@@ -69,7 +69,10 @@ class InsertCollector
                 $values[] = '(' . implode(', ', $escapedValues) . ')';
             }
             if (!empty($values)) {
-                $insertsString .= "INSERT INTO `$table` (" . implode(', ', array_keys(reset($chunk))) . ") VALUES " . implode(",\n", $values) . ";\n";
+                $columns = array_keys(reset($chunk));
+                // Add backticks around column names for safety
+                $columns = array_map(fn($col) => "`$col`", $columns);
+                $insertsString .= "INSERT INTO `$table` (" . implode(', ', $columns) . ")\nVALUES " . implode(",\n", $values) . ";\n";
             }
         }
         return $insertsString;

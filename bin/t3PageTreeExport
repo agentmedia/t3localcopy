@@ -3,10 +3,10 @@
 
 declare(strict_types=1);
 
-$baseDir = $_composer_autoload_path
-    ?? dirname(__DIR__, 2);
+$autoloadPath = $_composer_autoload_path
+    ?? dirname(__DIR__, 2) . '/autoload.php';
     
-require $baseDir . '/autoload.php';
+require $autoloadPath;
 use AgentMedia\T3LocalCopy\Export\ExportCommand;
 
 $command = null;

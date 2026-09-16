@@ -203,12 +203,13 @@ class TableExtractor {
         }
     }
     protected function getProcessableForeignTableConfig($table): ?TableConfig {
-        $foreignTableConfig = $this->tableConfigRegistry->getTableConfig($table);
-        if (!$foreignTableConfig) {
-            // Todo: log that the table is not configured
-            return null;
-        }
-        return $foreignTableConfig->getExplicitSelectQuery() ? null : $foreignTableConfig;
+       return  $this->tableConfigRegistry->getTableConfig($table);
+       // $foreignTableConfig = $this->tableConfigRegistry->getTableConfig($table);
+        // if (!$foreignTableConfig) {
+        //     // Todo: log that the table is not configured
+        //     return null;
+        // }
+        // return $foreignTableConfig->getExplicitSelectQuery() ? null : $foreignTableConfig;
     }
 
     protected function addInsertQueryFromSelect(string $tableName,string $whereQuery, array $placeholderValues): ?array {

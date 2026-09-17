@@ -20,7 +20,7 @@ class Exporter {
     protected ?FileCollectListener $fileCollectListener = null;
 
     protected ?ConfigTypeRegistry $configTypeRegistry;
-    public function __construct(array $config, ?ConfigTypeRegistry $configTypeRegistry) {
+    public function __construct(array $config, ?ConfigTypeRegistry $configTypeRegistry = null) {
         $this->config = $config;
         $this->configTypeRegistry = $configTypeRegistry;
         $dbConf = $config['db'] ?? [];

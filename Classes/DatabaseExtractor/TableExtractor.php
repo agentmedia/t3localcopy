@@ -58,6 +58,8 @@ class TableExtractor {
             $this->addUidsMultipleForeignTableRelations($record);
             $this->addFlexFieldForeignTableRelations($record);
             $this->addFlexFieldMultipleForeignTablesRelations($record);
+            // $this->addTcaColumnForeignTableRelations($record);
+            // $this->addTcaColumnMultipleForeignTableRelations($record);
             $this->addForeignChildRelations($record);
             if (!$this->tableConfig->getLanguageColumn() || (string)$record[$this->tableConfig->getLanguageColumn()] === '0') {
                 $this->addParentRecord($record);
@@ -68,6 +70,21 @@ class TableExtractor {
         }
         return true;
     }
+
+    // protected function addTcaColumnForeignTableRelations(array $thisRecord) {
+    //     $relations = $this->tableConfig->getTcaColumnForeignTableRelations();
+    //     foreach ($relations as $relation) {
+    //         $allowedTables = [$relation['table']];
+    //         $this->processTcaColumnForeignTablesRelation($thisRecord, $relation['tcaColumn'], $relation['recordCondition'], $allowedTables);
+    //     }
+    // }
+
+    // protected function addTcaColumnMultipleForeignTableRelations(array $thisRecord) {
+    //     $relations = $this->tableConfig->getTcaColumnMultipleForeignTableRelations();
+    //     foreach ($relations as $relation) {
+    //         $this->processTcaColumnForeignTablesRelation($thisRecord, $relation['tcaColumn'], $relation['recordCondition'], $relation['allowedTables']);
+    //     }
+    // }
 
     protected function addForeignParentRelations(array $thisRecord) {
         $relations = $this->tableConfig->getForeignParentRelations();
@@ -124,7 +141,7 @@ class TableExtractor {
         if ($recordCondition instanceof RecordConditionInterface && !$recordCondition->isFullfilled($thisRecord)) {
             return;
         }
-        $flexForm = $thisRecord['pi_flexform'] ?? null;
+        $flexForm = $thisRecord[$this->tableConfig->getFlexFormColumn()] ?? null;
         if (!$flexForm) {
             return;
         }
@@ -133,7 +150,26 @@ class TableExtractor {
         if (!$flexValue) {
             return;
         }
-        $this->processForeignTableUids([$flexValue], $allowedTables);
+        $tableUids = array_map('trim', explode(',', $flexValue));
+        if (empty($tableUids)) {
+            return;
+        }
+        $this->processForeignTableUids($tableUids, $allowedTables);
+    }
+
+    protected function processTcaColumnForeignTablesRelation(array $thisRecord, string $tcaColumn, ?RecordConditionInterface $recordCondition, array $allowedTables) {
+        if ($recordCondition instanceof RecordConditionInterface && !$recordCondition->isFullfilled($thisRecord)) {
+            return;
+        }
+        $columnValue = $thisRecord[$tcaColumn] ?? null;
+        if ($columnValue === null) {
+            return;
+        }
+        $tableUids = array_map('trim', explode(',', $columnValue));
+        if (empty($tableUids)) {
+            return;
+        }
+        $this->processForeignTableUids($tableUids, $allowedTables);
     }
 
     protected function addUidsForeignTableRelations(array $thisRecord) {
@@ -143,10 +179,7 @@ class TableExtractor {
             if ($recordCondition instanceof RecordConditionInterface && !$recordCondition->isFullfilled($thisRecord)) {
                 continue;
             }
-            $foreignTableConfig = $this->getProcessableForeignTableConfig($relation['table']);
-            if (!$foreignTableConfig) {
-                continue;
-            }
+            
             $columnValue = $thisRecord[$relation['column']] ?? null;
             if ($columnValue === null) {
                 continue;
@@ -155,7 +188,7 @@ class TableExtractor {
             if (empty($tableUids)) {
                 continue;
             }
-            $this->processForeignTableUids($tableUids, [$foreignTableConfig->getTableName()]);
+            $this->processForeignTableUids($tableUids, [$relation['table']]);
         }
     }
 

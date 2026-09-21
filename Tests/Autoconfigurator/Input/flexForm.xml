@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<T3DataStructure>
+	<sheets>
+		<sDEF>
+			<ROOT>
+				<sheetTitle>General</sheetTitle>
+				<type>array</type>
+				<el>
+					<imageTypeFile>
+						<label>Image</label>
+						<config>
+							<type>file</type>
+							<allowed>common-image-types</allowed>
+							<maxitems>1</maxitems>
+							<minitems>0</minitems>
+						</config>
+					</imageTypeFile>
+
+					<!-- old fashioned with type inline and sys_file_reference -->
+					<imageTypeInline>
+						<label>Image Inline</label>
+						<config>
+							<type>inline</type>
+							<foreign_table>sys_file_reference</foreign_table>
+							<maxitems>1</maxitems>
+							<minitems>0</minitems>
+						</config>
+					</imageTypeInline>
+					<contentOrPages>
+						<label>Content or Pages</label>
+						<config>
+							<type>group</type>
+							<internal_type>db</internal_type>
+							<allowed>pages,tt_content</allowed>
+							<size>5</size>
+							<minitems>0</minitems>
+							<maxitems>999</maxitems>
+						</config>
+					</contentOrPages>
+
+					<contentOnly>
+						<label>Content only</label>
+						<config>
+							<type>group</type>
+							<internal_type>db</internal_type>
+							<allowed>tt_content</allowed>
+							<size>5</size>
+							<minitems>0</minitems>
+							<maxitems>999</maxitems>
+						</config>
+					</contentOnly>
+					<contentOnlySelectTable>
+						<label>Content Only Select Table</label>
+						<config>
+							<type>select</type>
+							<foreign_table>tt_content</foreign_table>
+							<maxitems>1</maxitems>
+							<minitems>0</minitems>
+						</config>
+					</contentOnlySelectTable>
+				</el>
+			</ROOT>
+		</sDEF>
+	</sheets>
+</T3DataStructure>

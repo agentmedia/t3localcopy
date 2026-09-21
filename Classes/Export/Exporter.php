@@ -18,6 +18,7 @@ class Exporter {
     protected ?InsertCollector $insertCollector = null;
 
     protected ?FileCollectListener $fileCollectListener = null;
+    protected ?TableConfigRegistry $tableConfigRegistry = null;
 
     protected ?ConfigTypeRegistry $configTypeRegistry;
     public function __construct(array $config, ?ConfigTypeRegistry $configTypeRegistry = null) {
@@ -32,19 +33,29 @@ class Exporter {
                 \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
             ]
         );
+        $configReader = new ConfigReader($this->configTypeRegistry);
+        $this->tableConfigRegistry = $configReader->read($this->config);
+
+    }
+
+    /**
+     * Gets the table configuration registry. Allows to modify or inspect the table configurations before executing the export.
+     * 
+     * @return TableConfigRegistry|null
+     */
+    public function getTableConfigRegistry(): ?TableConfigRegistry {
+        return $this->tableConfigRegistry;
     }
 
     public function execute(): void {
-        $configReader = new ConfigReader($this->configTypeRegistry);
-        $tableConfigRegistry = $configReader->read($this->config);
         
         $this->insertCollector = new InsertCollector($this->pdo);
-        $this->performExplicitSelects($tableConfigRegistry);
+        $this->performExplicitSelects($this->tableConfigRegistry);
         $commonConfig = $this->config['common'] ?? [];
         $noFiles = $commonConfig['noFiles'] ?? false;
         if (!$noFiles) {
-            $fileConfig = $tableConfigRegistry->getTableConfig('sys_file');
-            $storageConfig = $tableConfigRegistry->getTableConfig('sys_file_storage');
+            $fileConfig = $this->tableConfigRegistry->getTableConfig('sys_file');
+            $storageConfig = $this->tableConfigRegistry->getTableConfig('sys_file_storage');
             if (!$fileConfig || !$storageConfig) {
                 throw new \LogicException('Missing configuration for sys_file or sys_file_storage table. Either add these configurations or set noFiles to true in the common configuration.');
             }
@@ -55,7 +66,7 @@ class Exporter {
         if (!$rootPageUid) {
             throw new \LogicException('Missing rootPageUid in the common configuration.');
         }
-        $pageTreeExtractor = new PageTreeExtractor($rootPageUid, $this->pdo, $this->insertCollector, $tableConfigRegistry);
+        $pageTreeExtractor = new PageTreeExtractor($rootPageUid, $this->pdo, $this->insertCollector, $this->tableConfigRegistry);
         $pageTreeExtractor->extract();
     }
 

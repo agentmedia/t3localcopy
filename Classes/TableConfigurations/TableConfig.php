@@ -10,7 +10,6 @@ class TableConfig {
     protected array $uidsForeignTableRelations = [];
     protected array $uidsMultipleForeignTableRelations = [];
     protected array $flexFieldForeignTableRelations = [];
-
     protected array $flexFieldMultipleForeignTableRelations = [];
     protected array $foreignChildRelations = [];
     protected array $foreignParentRelations = [];
@@ -187,6 +186,8 @@ class TableConfig {
     public function getL10nParentColumn(): string {
         return $this->l10nParentColumn;
     }
+
+    
 
     /**
      * Gets the language column name

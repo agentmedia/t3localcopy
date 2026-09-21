@@ -116,11 +116,28 @@ class TableExtractor {
             if ($columnValue === null) {
                 continue;
             }
-            $uids = array_map('trim', explode(',', $columnValue));
-            if (empty($uids)) {
+            $tableUids = array_map('trim', explode(',', $columnValue));
+            if (empty($tableUids)) {
                 continue;
             }
-            foreach ($uids as $uid) {
+            foreach ($tableUids as $tableUid) {
+                // The uid may be a numeric value or in the format table_uid
+                $table = $uid = null;
+                if (is_numeric($tableUid)) {
+                    $uid = $tableUid;
+                    $table = $foreignTableConfig->getTableName();
+                } else {
+                    if (($lastUnderscorePos = strrpos($tableUid, '_')) === false) {
+                        continue;
+                    }
+                    $uid = substr($tableUid, $lastUnderscorePos + 1);
+                    $table = substr($tableUid, 0, $lastUnderscorePos);
+                    if ($table !== $foreignTableConfig->getTableName()) {
+                        // Todo: log that the table extracted from the uid does not match the expected foreign table
+                        continue;
+                    }
+                }
+
                 $foreignTableExtractor = new self($this->pdo, $this->insertCollector, $foreignTableConfig, $this->tableConfigRegistry);
                 $foreignTableExtractor->collectInsertQueries($uid);
             }

@@ -9,6 +9,9 @@ class TableConfig {
 
     protected array $uidsForeignTableRelations = [];
     protected array $uidsMultipleForeignTableRelations = [];
+    protected array $flexFieldForeignTableRelations = [];
+
+    protected array $flexFieldMultipleForeignTableRelations = [];
     protected array $foreignChildRelations = [];
     protected array $foreignParentRelations = [];
     protected string $l10nParentColumn = 'l10n_parent';
@@ -16,10 +19,11 @@ class TableConfig {
 
     protected string $explicitSelectQuery = '';
     protected string $pidColumn = '';
+    protected string $flexFormColumn = 'pi_flexform';
 
     protected bool $includeParents = false;
 
-    public function __construct($tableName, $primaryColumn = 'uid', string $explicitSelectQuery = '', $l10nParentColumn = 'l10n_parent', $languageColumn = 'sys_language_uid', $pidColumn = '', bool $includeParents = false) {
+    public function __construct($tableName, $primaryColumn = 'uid', string $explicitSelectQuery = '', $l10nParentColumn = 'l10n_parent', $languageColumn = 'sys_language_uid', $pidColumn = '', bool $includeParents = false, string $flexFormColumn = 'pi_flexform') {
         $this->tableName = $tableName;
         $this->primaryColumn = $primaryColumn;
         $this->explicitSelectQuery = $explicitSelectQuery;
@@ -27,6 +31,7 @@ class TableConfig {
         $this->languageColumn = $languageColumn;
         $this->pidColumn = $pidColumn;
         $this->includeParents = $includeParents;
+        $this->flexFormColumn = $flexFormColumn;
     }
 
     public function getExplicitSelectQuery(): string {
@@ -42,12 +47,41 @@ class TableConfig {
         return $this->includeParents;
     }
 
+    public function getFlexFormColumn(): string {
+        return $this->flexFormColumn;
+    }
+
     public function addUidsForeignTableRelation($foreignUidsColumn, $foreignUidsTable, ?RecordConditionInterface $recordCondition = null) {
         $this->uidsForeignTableRelations[] = ['column' => $foreignUidsColumn, 'table' => $foreignUidsTable, 'recordCondition' => $recordCondition];
     }
 
     public function addUidsMultipleForeignTablesRelation($foreignUidsColumn,  array $allowedForeignUidsTables, ?RecordConditionInterface $recordCondition = null) {
         $this->uidsMultipleForeignTableRelations[] = ['column' => $foreignUidsColumn, 'allowedTables' => $allowedForeignUidsTables, 'recordCondition' => $recordCondition];   
+    }
+    /**
+     * Adds a foreign table relation for a specific flex field within a flex sheet. Only makes sense for tt_content.
+     * 
+     * @param string $flexSheet
+     * @param string $flexField
+     * @param string $foreignTable
+     * @param RecordConditionInterface|null $recordCondition
+     * @return void
+     */
+    public function addFlexFieldForeignTableRelation(string $flexSheet, string $flexField, string $foreignTable, ?RecordConditionInterface $recordCondition = null) {
+        $this->flexFieldForeignTableRelations[] = ['flexSheet' => $flexSheet, 'flexField' => $flexField, 'table' => $foreignTable, 'recordCondition' => $recordCondition];
+    }
+
+    /**
+     * Adds a multiple foreign tables relation for a specific flex field within a flex sheet. Only makes sense for tt_content.
+     * 
+     * @param string $flexSheet
+     * @param string $flexField
+     * @param array $allowedForeignTables
+     * @param RecordConditionInterface|null $recordCondition
+     * @return void
+     */
+    public function addFlexFieldMultipleForeignTablesRelation(string $flexSheet, string $flexField, array $allowedForeignTables, ?RecordConditionInterface $recordCondition = null) {
+        $this->flexFieldMultipleForeignTableRelations[] = ['flexSheet' => $flexSheet, 'flexField' => $flexField, 'allowedTables' => $allowedForeignTables, 'recordCondition' => $recordCondition];
     }
 
     /**
@@ -117,6 +151,25 @@ class TableConfig {
     public function getUidsMultipleForeignTableRelations(): array {
         return $this->uidsMultipleForeignTableRelations;
     }
+
+    /**
+     * Gets the flex field foreign table relations
+     * @return array The flex field foreign table relations, an array with each element containing
+     * 'flexSheet', 'flexField', 'table', and 'recordCondition' keys.
+     */
+    public function getFlexFieldForeignTableRelations(): array {
+        return $this->flexFieldForeignTableRelations;
+    }
+
+    /**
+     * Gets the flex field multiple foreign table relations
+     * @return array The flex field multiple foreign table relations, an array with each element containing
+     * 'flexSheet', 'flexField', 'allowedTables' and 'recordCondition' keys.
+     */
+    public function getFlexFieldMultipleForeignTableRelations(): array {
+        return $this->flexFieldMultipleForeignTableRelations;
+    }
+
 
     /**
      * Gets the foreign child relations

@@ -61,6 +61,8 @@ class ConfigReader {
             $tableConfig = $this->createTableConfig($tableConfigData);
             $this->addUidsForeignTableRelations($tableConfig, $tableConfigData['uidsForeignTableRelations'] ?? []);
             $this->addUidsMultipleForeignTablesRelations($tableConfig, $tableConfigData['uidsMultipleForeignTablesRelations'] ?? []);
+            $this->addFlexFieldForeignTableRelations($tableConfig, $tableConfigData['flexFieldForeignTableRelations'] ?? []);
+            $this->addFlexFieldMultipleForeignTablesRelations($tableConfig, $tableConfigData['flexFieldMultipleForeignTableRelations'] ?? []);
             $this->addForeignChildRelation($tableConfig, $tableConfigData['foreignChildRelations'] ?? []);
             $this->addForeignParentRelations($tableConfig, $tableConfigData['foreignParentRelations'] ?? []);
             $tableConfigRegistry->registerTableConfig($tableConfig);
@@ -125,6 +127,32 @@ class ConfigReader {
         }
     }
 
+    private function addFlexFieldForeignTableRelations(TableConfig $tableConfig, array $flexFieldForeignTableRelations): void {
+        foreach ($flexFieldForeignTableRelations as $relation) {
+            $flexSheet = $relation['flexSheet'] ?? '';
+            $flexField = $relation['flexField'] ?? '';
+            $foreignTable = $relation['table'] ?? '';
+            if (empty($flexSheet) || empty($flexField) || empty($foreignTable)) {
+                continue;
+            }
+            $recordCondition = $this->processRecordCondition($relation['recordCondition'] ?? null);
+            $tableConfig->addFlexFieldForeignTableRelation($flexSheet, $flexField, $foreignTable, $recordCondition);
+        }
+    }
+
+    private function addFlexFieldMultipleForeignTablesRelations(TableConfig $tableConfig, array $flexFieldMultipleForeignTableRelations): void {
+        foreach ($flexFieldMultipleForeignTableRelations as $relation) {
+            $flexSheet = $relation['flexSheet'] ?? '';
+            $flexField = $relation['flexField'] ?? '';
+            $allowedTables = $relation['allowedTables'] ?? [];
+            if (empty($flexSheet) || empty($flexField) || empty($allowedTables) || !is_array($allowedTables)) {
+                continue;
+            }
+            $recordCondition = $this->processRecordCondition($relation['recordCondition'] ?? null);
+            $tableConfig->addFlexFieldMultipleForeignTablesRelation($flexSheet, $flexField, $allowedTables, $recordCondition);
+        }
+    }
+
     private function addForeignParentRelations(TableConfig $tableConfig, array $foreignParentRelations): void {
         foreach ($foreignParentRelations as $relation) {
             $table = $relation['table'] ?? '';
@@ -166,6 +194,7 @@ class ConfigReader {
             $tableConfigData['languageColumn'] ?? 'sys_language_uid',
             $tableConfigData['pidColumn'] ?? '',
             $tableConfigData['includeParents'] ?? false,
+            $tableConfigData['flexFormColumn'] ?? 'pi_flexform'
         );
     }
 }

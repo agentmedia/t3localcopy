@@ -1,17 +1,20 @@
 <?php
 namespace AgentMedia\T3LocalCopy\DatabaseExtractor;
 
+use AgentMedia\T3LocalCopy\T3Config\Parser\FlexFormParser;
 use AgentMedia\T3LocalCopy\TableConfigurations\Condition\RecordConditionInterface;
 use AgentMedia\T3LocalCopy\TableConfigurations\TableConfigRegistry;
 use AgentMedia\T3LocalCopy\TableConfigurations\TableConfig;
 use AgentMedia\T3LocalCopy\EventHandling\EventHandler;
 
 class TableExtractor {
-    protected $tableConfig;
-    protected $pdo;
+    protected TableConfig $tableConfig;
+    protected \PDO $pdo;
     protected TableConfigRegistry $tableConfigRegistry;
     protected bool $includeParent = false;
     protected InsertCollector $insertCollector;
+
+
     const EVENT_INSERT_QUERY_ADDED = 'TableExtractor__Insert_Query_Added';
 
     
@@ -53,6 +56,8 @@ class TableExtractor {
             //$this->addParentRecord($record);
             $this->addUidsForeignTableRelations($record);
             $this->addUidsMultipleForeignTableRelations($record);
+            $this->addFlexFieldForeignTableRelations($record);
+            $this->addFlexFieldMultipleForeignTablesRelations($record);
             $this->addForeignChildRelations($record);
             if (!$this->tableConfig->getLanguageColumn() || (string)$record[$this->tableConfig->getLanguageColumn()] === '0') {
                 $this->addParentRecord($record);
@@ -101,6 +106,36 @@ class TableExtractor {
         $parentTableExtractor->collectInsertQueries($parentUid);
     }
 
+    protected function addFlexFieldForeignTableRelations(array $thisRecord) {
+        $relations = $this->tableConfig->getFlexFieldForeignTableRelations();
+        foreach ($relations as $relation) {
+            $allowedTables = [$relation['table']];
+            $this->processFlexFieldForeignTablesRelation($thisRecord, $relation['flexSheet'], $relation['flexField'], $relation['recordCondition'], $allowedTables);
+        }
+    }
+
+    protected function addFlexFieldMultipleForeignTablesRelations(array $thisRecord) {
+        $relations = $this->tableConfig->getFlexFieldMultipleForeignTableRelations();
+        foreach ($relations as $relation) {
+            $this->processFlexFieldForeignTablesRelation($thisRecord, $relation['flexSheet'], $relation['flexField'], $relation['recordCondition'], $relation['allowedTables']);
+        }
+    }
+    protected function processFlexFieldForeignTablesRelation(array $thisRecord, string $flexSheet, string $flexField, ?RecordConditionInterface $recordCondition, array $allowedTables) {
+        if ($recordCondition instanceof RecordConditionInterface && !$recordCondition->isFullfilled($thisRecord)) {
+            return;
+        }
+        $flexForm = $thisRecord['pi_flexform'] ?? null;
+        if (!$flexForm) {
+            return;
+        }
+        $parser = FlexFormParser::fromXml($flexForm);
+        $flexValue = $parser->getValue($flexSheet, $flexField);
+        if (!$flexValue) {
+            return;
+        }
+        $this->processForeignTableUids([$flexValue], $allowedTables);
+    }
+
     protected function addUidsForeignTableRelations(array $thisRecord) {
         $relations = $this->tableConfig->getUidsForeignTableRelations();
         foreach ($relations as $relation) {
@@ -120,27 +155,7 @@ class TableExtractor {
             if (empty($tableUids)) {
                 continue;
             }
-            foreach ($tableUids as $tableUid) {
-                // The uid may be a numeric value or in the format table_uid
-                $table = $uid = null;
-                if (is_numeric($tableUid)) {
-                    $uid = $tableUid;
-                    $table = $foreignTableConfig->getTableName();
-                } else {
-                    if (($lastUnderscorePos = strrpos($tableUid, '_')) === false) {
-                        continue;
-                    }
-                    $uid = substr($tableUid, $lastUnderscorePos + 1);
-                    $table = substr($tableUid, 0, $lastUnderscorePos);
-                    if ($table !== $foreignTableConfig->getTableName()) {
-                        // Todo: log that the table extracted from the uid does not match the expected foreign table
-                        continue;
-                    }
-                }
-
-                $foreignTableExtractor = new self($this->pdo, $this->insertCollector, $foreignTableConfig, $this->tableConfigRegistry);
-                $foreignTableExtractor->collectInsertQueries($uid);
-            }
+            $this->processForeignTableUids($tableUids, [$foreignTableConfig->getTableName()]);
         }
     }
 
@@ -158,7 +173,12 @@ class TableExtractor {
                 continue;
             }
             $tableUids = array_map('trim', explode(',', $columnValue));
-            foreach ($tableUids as $tableUid) {
+            $this->processForeignTableUids($tableUids, $allowedTables);
+        }
+    }
+
+    protected function processForeignTableUids(array $tableUids, array $allowedTables) {
+        foreach ($tableUids as $tableUid) {
                 // separate at last underscore to get table name and uid
                 $lastUnderscorePos = strrpos($tableUid, '_');
                 if ($lastUnderscorePos === false) {
@@ -181,10 +201,8 @@ class TableExtractor {
                 }
                 $foreignTableExtractor = new self($this->pdo, $this->insertCollector, $foreignTableConfig, $this->tableConfigRegistry);
                 $foreignTableExtractor->collectInsertQueries($uid);
-            }
         }
     }
-
 
 
     protected function addForeignChildRelations(array $thisRecord) {

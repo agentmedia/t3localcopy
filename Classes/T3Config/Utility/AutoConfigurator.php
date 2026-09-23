@@ -24,7 +24,7 @@ final class AutoConfigurator {
         }
     }
 
-    public static function addTcaConfigFalRelations(TableConfig $tableConfig, TcaParser $tcaParser, RecordConditionInterface $recordCondition, array $excludeFields = []) {
+    public static function addTcaConfigFalRelations(TableConfig $tableConfig, TcaParser $tcaParser, ?RecordConditionInterface $recordCondition = null, array $excludeFields = []) {
         $falFields = $tcaParser->getConfigFalReferenceFields() ?? [];
         foreach ($falFields as $fieldName => $fieldConfig) {
                 if (in_array($fieldName, $excludeFields)) {
@@ -90,7 +90,7 @@ final class AutoConfigurator {
         }
     }
 
-    public static function addTcaConfigSelectTableRelations(TableConfig $tableConfig, TcaParser $tcaParser, RecordConditionInterface $recordCondition, array $excludeFields = []) {
+    public static function addTcaConfigSelectTableRelations(TableConfig $tableConfig, TcaParser $tcaParser, ?RecordConditionInterface $recordCondition = null, array $excludeFields = []) {
         $selectTableFields = $tcaParser->getConfigSelectTableFields();
         foreach ($selectTableFields as $fieldName => $fieldDef) {
             if (in_array($fieldName, $excludeFields)) {
@@ -104,7 +104,7 @@ final class AutoConfigurator {
         }
     }
 
-    public static function addTcaConfigGroupDbFieldsRelations(TableConfig $tableConfig, TcaParser $tcaParser, RecordConditionInterface $recordCondition, array $excludeFields = []) {
+    public static function addTcaConfigGroupDbFieldsRelations(TableConfig $tableConfig, TcaParser $tcaParser, ?RecordConditionInterface $recordCondition = null, array $excludeFields = []) {
         $groupDbFields = $tcaParser->getConfigGroupDbFields();
         foreach ($groupDbFields as $fieldName => $fieldConfig) {
             if (in_array($fieldName, $excludeFields)) {

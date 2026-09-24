@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace AgentMedia\T3LocalCopy\Export;
 
 use AgentMedia\T3LocalCopy\DatabaseExtractor\InsertCollector;
@@ -11,7 +11,8 @@ use AgentMedia\T3LocalCopy\TableConfigurations\Reader\ConfigTypeRegistry;
 use AgentMedia\T3LocalCopy\TableConfigurations\TableConfig;
 use AgentMedia\T3LocalCopy\TableConfigurations\TableConfigRegistry;
 
-class Exporter  {
+class Exporter
+{
 
     protected array $config;
     protected \PDO $pdo;
@@ -26,7 +27,8 @@ class Exporter  {
     protected $continuousSqlDumpEnabled = false;
 
     protected ?ConfigTypeRegistry $configTypeRegistry;
-    public function __construct(array $config, ?ConfigTypeRegistry $configTypeRegistry = null, int $verbosityLevel = InsertAddReporter::VERBOSITY_NONE, string $sqlDumpType = InsertCollector::DUMP_TYPE_UPSERTS) {
+    public function __construct(array $config, ?ConfigTypeRegistry $configTypeRegistry = null, int $verbosityLevel = InsertAddReporter::VERBOSITY_NONE, string $sqlDumpType = InsertCollector::DUMP_TYPE_UPSERTS)
+    {
         if ($verbosityLevel !== InsertAddReporter::VERBOSITY_NONE) {
             EventHandler::addListener(TableExtractor::EVENT_INSERT_QUERY_ADDED, new InsertAddReporter($verbosityLevel));
         }
@@ -38,7 +40,7 @@ class Exporter  {
             $dbConf['dsn'] ?? '',
             $dbConf['username'] ?? '',
             $dbConf['password'] ?? '',
-            [   
+            [
                 \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
             ]
         );
@@ -47,10 +49,11 @@ class Exporter  {
         $this->insertCollector = new InsertCollector($this->pdo, $sqlDumpType);
     }
 
-    public static function initCliInterruptHandling(): bool {
-       if (!extension_loaded('pcntl')) {
-        return false;
-       }
+    public static function initCliInterruptHandling(): bool
+    {
+        if (!extension_loaded('pcntl')) {
+            return false;
+        }
         pcntl_async_signals(true);
         pcntl_signal(SIGINT, function () {
             echo "Export interrupted.\n";
@@ -72,7 +75,8 @@ class Exporter  {
      * @param int $continuousChunkSize
      * @return void
      */
-    public function setContinuousSqlDumpFileHandle($fileHandle, int $continuousChunkSize = 10000): void {
+    public function setContinuousSqlDumpFileHandle($fileHandle, int $continuousChunkSize = 10000): void
+    {
         $this->continuousSqlDumpEnabled = true;
         $this->insertCollector->enableContinuousDumps($fileHandle, $continuousChunkSize);
     }
@@ -81,33 +85,39 @@ class Exporter  {
      * 
      * @return TableConfigRegistry|null
      */
-    public function getTableConfigRegistry(): ?TableConfigRegistry {
+    public function getTableConfigRegistry(): ?TableConfigRegistry
+    {
         return $this->tableConfigRegistry;
     }
 
-    public function execute(): void {
-        
-        $this->performExplicitSelects($this->tableConfigRegistry);
-        $commonConfig = $this->config['common'] ?? [];
-        $noFiles = $commonConfig['noFiles'] ?? false;
-        if (!$noFiles) {
-            $fileConfig = $this->tableConfigRegistry->getTableConfig('sys_file');
-            $storageConfig = $this->tableConfigRegistry->getTableConfig('sys_file_storage');
-            if (!$fileConfig || !$storageConfig) {
-                throw new \LogicException('Missing configuration for sys_file or sys_file_storage table. Either add these configurations or set noFiles to true in the common configuration.');
+    public function execute(): void
+    {
+        try {
+            $this->performExplicitSelects($this->tableConfigRegistry);
+            $commonConfig = $this->config['common'] ?? [];
+            $noFiles = $commonConfig['noFiles'] ?? false;
+            if (!$noFiles) {
+                $fileConfig = $this->tableConfigRegistry->getTableConfig('sys_file');
+                $storageConfig = $this->tableConfigRegistry->getTableConfig('sys_file_storage');
+                if (!$fileConfig || !$storageConfig) {
+                    throw new \LogicException('Missing configuration for sys_file or sys_file_storage table. Either add these configurations or set noFiles to true in the common configuration.');
+                }
+                $this->fileCollectListener = new FileCollectListener($this->pdo, $fileConfig, $storageConfig);
+                EventHandler::addListener(TableExtractor::EVENT_INSERT_QUERY_ADDED, $this->fileCollectListener);
             }
-            $this->fileCollectListener = new FileCollectListener($this->pdo, $fileConfig, $storageConfig);
-            EventHandler::addListener(TableExtractor::EVENT_INSERT_QUERY_ADDED, $this->fileCollectListener);
+            $rootPageUid = $commonConfig['rootPageUid'] ?? null;
+            if (!$rootPageUid) {
+                throw new \LogicException('Missing rootPageUid in the common configuration.');
+            }
+            $pageTreeExtractor = new PageTreeExtractor($rootPageUid, $this->pdo, $this->insertCollector, $this->tableConfigRegistry);
+            $pageTreeExtractor->extract();
+        } finally {
+            $this->insertCollector->finalize();
         }
-        $rootPageUid = $commonConfig['rootPageUid'] ?? null;
-        if (!$rootPageUid) {
-            throw new \LogicException('Missing rootPageUid in the common configuration.');
-        }
-        $pageTreeExtractor = new PageTreeExtractor($rootPageUid, $this->pdo, $this->insertCollector, $this->tableConfigRegistry);
-        $pageTreeExtractor->extract();
     }
 
-    protected function performExplicitSelects(TableConfigRegistry $tableConfigRegistry) {
+    protected function performExplicitSelects(TableConfigRegistry $tableConfigRegistry)
+    {
         $tableConfigs = $tableConfigRegistry->getAllTableConfigs();
         foreach ($tableConfigs as $tableName => $tableConfig) {
             /**
@@ -115,24 +125,28 @@ class Exporter  {
              */
             $explicitSelectQuery = $tableConfig->getExplicitSelectQuery();
             if ($explicitSelectQuery) {
-                $select = "SELECT * FROM " . $tableName . " WHERE " . $explicitSelectQuery;
+                $primaryColumn = $tableConfig->getPrimaryColumn();
+                $select = "SELECT `" . $primaryColumn . "` FROM `" . $tableName . "` WHERE " . $explicitSelectQuery;
                 $stmt = $this->pdo->query($select);
-                $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-                foreach ($results as $row) {
-                    $this->insertCollector->addInsert($tableName, $row, $tableConfig->getPrimaryColumn());
+                $primaryKeys = $stmt->fetchAll(\PDO::FETCH_COLUMN, 0);
+                foreach ($primaryKeys as $primaryKey) {
+                    $tableExtractor = new TableExtractor($this->pdo, $this->insertCollector, $tableConfig, $tableConfigRegistry);
+                    $tableExtractor->collectInsertQueries($primaryKey);
                 }
             }
         }
     }
 
-    public function getSqlString(): string {
+    public function getSqlString(): string
+    {
         if ($this->continuousSqlDumpEnabled) {
             throw new \LogicException('Method getSqlString() makes no sense in conjunction with continuous SQL dump.');
         }
         return $this->insertCollector ? $this->insertCollector->getSqlString() : '';
     }
 
-    public function getCollectedFiles(): array {
+    public function getCollectedFiles(): array
+    {
         return $this->fileCollectListener ? $this->fileCollectListener->getCollectedFiles() : [];
     }
 

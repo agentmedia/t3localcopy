@@ -3,15 +3,45 @@ namespace AgentMedia\T3LocalCopy\DatabaseExtractor;
 
 use AgentMedia\T3LocalCopy\TableConfigurations\TableConfigRegistry;
 
-class InsertCollector
+final class InsertCollector
 {
-   
+    public const DUMP_TYPE_INSERTS = 'inserts';
+    public const DUMP_TYPE_UPSERTS = 'upserts';
 
-    public function __destruct() {
-        $this->dumpIfRequired(true);
+
+    private bool $finalized = false;
+    private array $inserts = [];
+
+    private \PDO $pdo;
+
+    private array $primaryColumns = [];
+
+    private $continuousDumpFileHandle;
+    private int $continuousChunkSize = 10000;
+    private string $dumpType = self::DUMP_TYPE_UPSERTS;
+
+    private array $dumpedInserts = [];
+
+    private $numCurrentInserts = 0;
+    public function __construct(\PDO $pdo, string $dumpType = self::DUMP_TYPE_UPSERTS)
+    {
+        $this->pdo = $pdo;
+        $this->dumpType = $dumpType;
     }
 
-    protected function dumpIfRequired(bool $force = false): bool {
+    /**
+     * 
+     * Finalizes the insert collection by dumping any remaining inserts if required.
+     * @return void
+     */
+    public function finalize(): void {
+        if (!$this->finalized) {
+            $this->dumpIfRequired(true);
+            $this->finalized = true;
+        }
+    }
+
+    private function dumpIfRequired(bool $force = false): bool {
         if ($this->continuousDumpFileHandle && ($this->numCurrentInserts >= $this->continuousChunkSize || $force)) {
             $sqlString = $this->getSqlString($this->continuousChunkSize, false);
             if ($sqlString) {
@@ -21,27 +51,6 @@ class InsertCollector
         }
         return false;
     }
-    protected array $inserts = [];
-
-    protected \PDO $pdo;
-
-    protected array $primaryColumns = [];
-
-    protected $continuousDumpFileHandle;
-    protected int $continuousChunkSize = 10000;
-    protected string $dumpType = self::DUMP_TYPE_UPSERTS;
-
-    protected array $dumpedInserts = [];
-
-    protected $numCurrentInserts = 0;
-    public function __construct(\PDO $pdo, string $dumpType = self::DUMP_TYPE_UPSERTS)
-    {
-        $this->pdo = $pdo;
-        $this->dumpType = $dumpType;
-    }
-
-    const DUMP_TYPE_INSERTS = 'inserts';
-    const DUMP_TYPE_UPSERTS = 'upserts';
     /**
      * 
      * Enables continuous dumps of inserts to a specified file handle in chunks.
@@ -76,7 +85,7 @@ class InsertCollector
             return false;
         }
         $this->inserts[$table][$primaryKeyValue] = $data;
-    
+        $this->dumpIfRequired();
         return true;
     }
 
@@ -107,7 +116,7 @@ class InsertCollector
      * @param bool $withTableComment Whether to include table comments in the generated INSERT SQL string.
      * @return string Returns the generated INSERT SQL string for all tables.
      */
-    protected function getInsertsString(int $chunkSize = 1000, bool $withTableComment = true): string
+    private function getInsertsString(int $chunkSize = 1000, bool $withTableComment = true): string
     {
         $insertsString = '';
         $tables = $this->getTables();
@@ -126,7 +135,7 @@ class InsertCollector
      * @param bool $withTableComment Whether to include table comments in the generated UPSERT SQL string.
      * @return string Returns the generated UPSERT SQL string for all tables.
      */
-    protected function getUpsertsString(int $chunkSize = 1000, bool $withTableComment = true): string
+    private function getUpsertsString(int $chunkSize = 1000, bool $withTableComment = true): string
     {
         $upsertsString = '';
         $tables = $this->getTables();
@@ -145,7 +154,7 @@ class InsertCollector
      * @param int $chunkSize The number of rows to include in each INSERT statement chunk.
      * @return string The generated INSERT SQL string for the specified table.
      */
-    protected function getTableInsertsString(string $table, int $chunkSize = 1000): string
+    private function getTableInsertsString(string $table, int $chunkSize = 1000): string
     {
         $insertsString = '';
         if (!isset($this->inserts[$table])) {
@@ -177,7 +186,7 @@ class InsertCollector
      * @param int $chunkSize The number of rows to include in each UPSERT statement chunk.
      * @return string The generated UPSERT SQL string for the specified table.
      */
-    protected function getTableUpsertString(string $table, int $chunkSize = 1000): string
+    private function getTableUpsertString(string $table, int $chunkSize = 1000): string
     {
         $upsertsString = '';
         if (!isset($this->inserts[$table])) {

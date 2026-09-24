@@ -4,6 +4,7 @@ namespace AgentMedia\T3LocalCopy\Export;
 use AgentMedia\T3LocalCopy\DatabaseExtractor\InsertCollector;
 use AgentMedia\T3LocalCopy\DatabaseExtractor\TableExtractor;
 use AgentMedia\T3LocalCopy\EventHandling\EventHandler;
+use AgentMedia\T3LocalCopy\EventHandling\EventListenerInterface;
 
 
 
@@ -16,55 +17,83 @@ use AgentMedia\T3LocalCopy\EventHandling\EventHandler;
  * 
  */
 
-final class ExportCommand
+final class ExportCommand implements EventListenerInterface
 {
+    protected function closeInsertFileHandle()
+    {
+        if ($this->insertFileHandle) {
+            fclose($this->insertFileHandle);
+            $this->insertFileHandle = null;
+        }
+    }
+    public function handleEvent(array $params)
+    {
+        $this->closeInsertFileHandle();
+    }
+
+    public function __destruct()
+    {
+        $this->closeInsertFileHandle();
+    }
     private $defaultBaseDir;
+
+    private $insertFileHandle = null;
     public function __construct($defaultBaseDir)
     {
         $this->defaultBaseDir = $defaultBaseDir;
     }
     public function execute()
-    {   
-        if (Exporter::initCliInterruptHandling()) {
-            echo "You can interrupt the export process gracefully using Ctrl+C.\n";
-        }
-    
-        $cliArguments = $this->readCliArguments();
-        $verbosity = (int)($cliArguments['verbosity'] ?? InsertAddReporter::VERBOSITY_NONE);
+    {
+        try {
+            EventHandler::addListener(Exporter::EVENT_EXPORT_INTERRUPTED, $this);
+            if (Exporter::initCliInterruptHandling()) {
+                echo "You can interrupt the export process gracefully using Ctrl+C.\n";
+            }
 
-        $rootPageUid = (int)($cliArguments['rootPageUid'] ?? 0);
-        $configFile = $cliArguments['configFile'];
-        $filesFile = $cliArguments['filesFile'] ?? $this->defaultBaseDir . '/files.txt';
-        $insertsFile = $cliArguments['insertsFile'] ?? $this->defaultBaseDir . '/inserts.sql';
-        $noContinuousSqlDump = isset($cliArguments['noContinuousSqlDump']);
-        $dumpInserts = isset($cliArguments['dumpInserts']);
-        if (!file_exists($configFile)) {
-            throw new \InvalidArgumentException("Config file not found: $configFile");
-        }
-        $config = json_decode(file_get_contents($configFile), true);
-        if ($rootPageUid) {
-        $config['common']['rootPageUid'] = $rootPageUid;
-        }
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \RuntimeException('Failed to parse config file: ' . json_last_error_msg());
-        }
-        $exporter = new Exporter($config, verbosityLevel: $verbosity, sqlDumpType: $dumpInserts ? InsertCollector::DUMP_TYPE_INSERTS : InsertCollector::DUMP_TYPE_UPSERTS);
-        
-        if(!$noContinuousSqlDump) {
-            $fileHandle = fopen($insertsFile, 'w');
-            if (!$fileHandle) {
-                throw new \RuntimeException("Failed to set continuous SQL dump file handle for: $insertsFile");
+            $cliArguments = $this->readCliArguments();
+            $verbosity = (int) ($cliArguments['verbosity'] ?? InsertAddReporter::VERBOSITY_NONE);
+
+            $rootPageUid = (int) ($cliArguments['rootPageUid'] ?? 0);
+            $configFile = $cliArguments['configFile'];
+            $filesFile = $cliArguments['filesFile'] ?? $this->defaultBaseDir . '/files.txt';
+            $insertsFile = $cliArguments['insertsFile'] ?? $this->defaultBaseDir . '/inserts.sql';
+            $noContinuousSqlDump = isset($cliArguments['noContinuousSqlDump']);
+            $dumpInserts = isset($cliArguments['dumpInserts']);
+            if (!file_exists($configFile)) {
+                throw new \InvalidArgumentException("Config file not found: $configFile");
             }
-            $exporter->setContinuousSqlDumpFileHandle($fileHandle);
-            $exporter->execute();
-        } else {
-            $exporter->execute();
-            if (file_put_contents($insertsFile, $exporter->getSqlString()) === false) {
-                throw new \RuntimeException("Failed to write to inserts file: $insertsFile");
+            $config = json_decode(file_get_contents($configFile), true);
+            if ($rootPageUid) {
+                $config['common']['rootPageUid'] = $rootPageUid;
             }
-        }
-        if (file_put_contents($filesFile, implode(PHP_EOL, $exporter->getCollectedFiles())) === false) {
-            throw new \RuntimeException("Failed to write to files file: $filesFile");
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \RuntimeException('Failed to parse config file: ' . json_last_error_msg());
+            }
+            $exporter = new Exporter($config, verbosityLevel: $verbosity, sqlDumpType: $dumpInserts ? InsertCollector::DUMP_TYPE_INSERTS : InsertCollector::DUMP_TYPE_UPSERTS);
+
+            if (!$noContinuousSqlDump) {
+                $this->insertFileHandle = fopen($insertsFile, 'w');
+                if (!$this->insertFileHandle) {
+                    throw new \RuntimeException("Failed to set continuous SQL dump file handle for: $insertsFile");
+                }
+                $exporter->setContinuousSqlDumpFileHandle($this->insertFileHandle);
+                $exporter->execute();
+            } else {
+                $exporter->execute();
+                if (file_put_contents($insertsFile, $exporter->getSqlString()) === false) {
+                    throw new \RuntimeException("Failed to write to inserts file: $insertsFile");
+                }
+            }
+            $collectedFiles = $exporter->getCollectedFiles();
+            sort($collectedFiles);
+            if (!empty($collectedFiles)) {
+                if (file_put_contents($filesFile, implode(PHP_EOL, $collectedFiles)) === false) {
+                    throw new \RuntimeException("Failed to write to files file: $filesFile");
+                }
+            }
+            // Removed because handled above with $collectedFiles
+        } finally {
+            $this->closeInsertFileHandle();
         }
     }
 

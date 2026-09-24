@@ -29,7 +29,7 @@ final class ExportCommand
         }
     
         $cliArguments = $this->readCliArguments();
-        $verbosity = (int)($cliArguments['verbosity'] ?? InsertAddtListener::VERBOSITY_NONE);
+        $verbosity = (int)($cliArguments['verbosity'] ?? InsertAddReporter::VERBOSITY_NONE);
 
         $rootPageUid = (int)($cliArguments['rootPageUid'] ?? 0);
         $configFile = $cliArguments['configFile'];
@@ -48,7 +48,7 @@ final class ExportCommand
         $exporter = new Exporter($config, null, $verbosity);
         $exporter->execute();
 
-        if (file_put_contents($insertsFile, $exporter->getInsertsSql()) === false) {
+        if (file_put_contents($insertsFile, $exporter->getUpsertsSql()) === false) {
             throw new \RuntimeException("Failed to write to inserts file: $insertsFile");
         }
         if (file_put_contents($filesFile, implode(PHP_EOL, $exporter->getCollectedFiles())) === false) {
@@ -64,7 +64,7 @@ final class ExportCommand
             throw new \InvalidArgumentException('Missing required CLI arguments. You must provide a configFile');
         }
         if (!isset($options['verbosity'])) {
-            $options['verbosity'] = InsertAddtListener::VERBOSITY_NONE;
+            $options['verbosity'] = InsertAddReporter::VERBOSITY_NONE;
         }
         return $options;
     }

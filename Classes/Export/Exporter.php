@@ -120,4 +120,8 @@ class Exporter  {
         return $this->fileCollectListener ? $this->fileCollectListener->getCollectedFiles() : [];
     }
 
+    public function getUpsertsSql(): string {
+        return $this->insertCollector ? $this->insertCollector->getUpsertsString() : '';
+    }
+
 }

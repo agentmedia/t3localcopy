@@ -6,7 +6,7 @@ use AgentMedia\T3LocalCopy\EventHandling\EventListenerInterface;
 use AgentMedia\T3LocalCopy\TableConfigurations\TableConfig;
 
 
-final class InsertAddtListener implements EventListenerInterface
+final class InsertAddReporter implements EventListenerInterface
 {
     const VERBOSITY_NONE = 0;
     const VERBOSITY_LOW = 1;

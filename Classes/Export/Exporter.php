@@ -5,7 +5,6 @@ use AgentMedia\T3LocalCopy\DatabaseExtractor\InsertCollector;
 use AgentMedia\T3LocalCopy\DatabaseExtractor\PageTreeExtractor;
 use AgentMedia\T3LocalCopy\DatabaseExtractor\TableExtractor;
 use AgentMedia\T3LocalCopy\EventHandling\EventHandler;
-use AgentMedia\T3LocalCopy\EventHandling\EventListenerInterface;
 use AgentMedia\T3LocalCopy\FileCollecting\FileCollectListener;
 use AgentMedia\T3LocalCopy\TableConfigurations\Reader\ConfigReader;
 use AgentMedia\T3LocalCopy\TableConfigurations\Reader\ConfigTypeRegistry;
@@ -25,9 +24,9 @@ class Exporter  {
     const EVENT_EXPORT_INTERRUPTED = 'exportInterrupted';
 
     protected ?ConfigTypeRegistry $configTypeRegistry;
-    public function __construct(array $config, ?ConfigTypeRegistry $configTypeRegistry = null, int $verbosityLevel = InsertAddtListener::VERBOSITY_NONE) {
-        if ($verbosityLevel !== InsertAddtListener::VERBOSITY_NONE) {
-            EventHandler::addListener(TableExtractor::EVENT_INSERT_QUERY_ADDED, new InsertAddtListener($verbosityLevel));
+    public function __construct(array $config, ?ConfigTypeRegistry $configTypeRegistry = null, int $verbosityLevel = InsertAddReporter::VERBOSITY_NONE) {
+        if ($verbosityLevel !== InsertAddReporter::VERBOSITY_NONE) {
+            EventHandler::addListener(TableExtractor::EVENT_INSERT_QUERY_ADDED, new InsertAddReporter($verbosityLevel));
         }
         EventHandler::addListener(self::EVENT_EXPORT_INTERRUPTED, new ExportInterruptionListener());
         $this->config = $config;

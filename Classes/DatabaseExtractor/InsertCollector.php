@@ -5,22 +5,64 @@ use AgentMedia\T3LocalCopy\TableConfigurations\TableConfigRegistry;
 
 class InsertCollector
 {
+   
+
+    public function __destruct() {
+        $this->dumpIfRequired(true);
+    }
+
+    protected function dumpIfRequired(bool $force = false): bool {
+        if ($this->continuousDumpFileHandle && ($this->numCurrentInserts >= $this->continuousChunkSize || $force)) {
+            $sqlString = $this->getSqlString($this->continuousChunkSize, false);
+            if ($sqlString) {
+                fwrite($this->continuousDumpFileHandle, $sqlString);
+                return true;
+            }
+        }
+        return false;
+    }
     protected array $inserts = [];
 
     protected \PDO $pdo;
 
-    private array $primaryColumns = [];
-    public function __construct(\PDO $pdo)
+    protected array $primaryColumns = [];
+
+    protected $continuousDumpFileHandle;
+    protected int $continuousChunkSize = 10000;
+    protected string $dumpType = self::DUMP_TYPE_UPSERTS;
+
+    protected array $dumpedInserts = [];
+
+    protected $numCurrentInserts = 0;
+    public function __construct(\PDO $pdo, string $dumpType = self::DUMP_TYPE_UPSERTS)
     {
         $this->pdo = $pdo;
+        $this->dumpType = $dumpType;
+    }
+
+    const DUMP_TYPE_INSERTS = 'inserts';
+    const DUMP_TYPE_UPSERTS = 'upserts';
+    /**
+     * 
+     * Enables continuous dumps of inserts to a specified file handle in chunks.
+     * 
+     * @param mixed $fileHandle
+     * @param int $continuousChunkSize
+     * @return void
+     */
+    public function enableContinuousDumps($fileHandle, int $continuousChunkSize = 10000) {
+        $this->continuousDumpFileHandle = $fileHandle;
+        $this->continuousChunkSize = $continuousChunkSize;;
     }
 
     public function hasInsert(string $table, $primaryKeyValue): bool
     {
-        return isset($this->inserts[$table][$primaryKeyValue]);
+        $dumpedPrimaryKeyValues = $this->dumpedInserts[$table] ?? [];
+        return   isset($this->inserts[$table][$primaryKeyValue]) || \in_array($primaryKeyValue, $dumpedPrimaryKeyValues);
     }
     public function addInsert(string $table, array $data, $primaryKeyColumn): bool
     {
+        $this->numCurrentInserts++;
         $this->primaryColumns[$table] = $primaryKeyColumn;
 
         if (!isset($this->inserts[$table])) {
@@ -34,6 +76,7 @@ class InsertCollector
             return false;
         }
         $this->inserts[$table][$primaryKeyValue] = $data;
+    
         return true;
     }
 
@@ -47,13 +90,24 @@ class InsertCollector
         return array_keys($this->inserts);
     }
 
+    public function getSqlString(int $chunkSize = 1000, bool $withTableComment = true): string {
+        if ($this->dumpType === self::DUMP_TYPE_INSERTS) {
+            return $this->getInsertsString($chunkSize, $withTableComment);
+        } elseif ($this->dumpType === self::DUMP_TYPE_UPSERTS) {
+            return $this->getUpsertsString($chunkSize, $withTableComment);
+        }
+        $this->inserts = [];
+        $this->numCurrentInserts = 0;
+        return '';
+    }
+
     /**
      * This method iterates over all tables and generates the corresponding INSERT SQL statements in chunks.
      * @param int $chunkSize The number of rows to include in each INSERT statement chunk.
      * @param bool $withTableComment Whether to include table comments in the generated INSERT SQL string.
      * @return string Returns the generated INSERT SQL string for all tables.
      */
-    public function getInsertsString(int $chunkSize = 1000, bool $withTableComment = true): string
+    protected function getInsertsString(int $chunkSize = 1000, bool $withTableComment = true): string
     {
         $insertsString = '';
         $tables = $this->getTables();
@@ -72,7 +126,7 @@ class InsertCollector
      * @param bool $withTableComment Whether to include table comments in the generated UPSERT SQL string.
      * @return string Returns the generated UPSERT SQL string for all tables.
      */
-    public function getUpsertsString(int $chunkSize = 1000, bool $withTableComment = true): string
+    protected function getUpsertsString(int $chunkSize = 1000, bool $withTableComment = true): string
     {
         $upsertsString = '';
         $tables = $this->getTables();
@@ -91,7 +145,7 @@ class InsertCollector
      * @param int $chunkSize The number of rows to include in each INSERT statement chunk.
      * @return string The generated INSERT SQL string for the specified table.
      */
-    public function getTableInsertsString(string $table, int $chunkSize = 1000): string
+    protected function getTableInsertsString(string $table, int $chunkSize = 1000): string
     {
         $insertsString = '';
         if (!isset($this->inserts[$table])) {
@@ -99,7 +153,9 @@ class InsertCollector
         }
         $rows = $this->inserts[$table];
         $chunks = array_chunk($rows, $chunkSize, true);
-        foreach ($chunks as $chunk) {
+        foreach ($chunks as $uid => $chunk) {
+            $this->dumpedInserts[$table] = $this->dumpedInserts[$table] ?? [];
+            $this->dumpedInserts[$table][] = $uid;
             $values = [];
             foreach ($chunk as $row) {
                 $escapedValues = array_map(fn($value) => is_null($value) ? 'NULL' : $this->pdo->quote((string) $value), $row);
@@ -121,7 +177,7 @@ class InsertCollector
      * @param int $chunkSize The number of rows to include in each UPSERT statement chunk.
      * @return string The generated UPSERT SQL string for the specified table.
      */
-    public function getTableUpsertString(string $table, int $chunkSize = 1000): string
+    protected function getTableUpsertString(string $table, int $chunkSize = 1000): string
     {
         $upsertsString = '';
         if (!isset($this->inserts[$table])) {
@@ -135,7 +191,9 @@ class InsertCollector
         $chunks = array_chunk($rows, $chunkSize, true);
         foreach ($chunks as $chunk) {
             $values = [];
-            foreach ($chunk as $row) {
+            foreach ($chunk as $uid => $row) {
+                $this->dumpedInserts[$table] = $this->dumpedInserts[$table] ?? [];
+                $this->dumpedInserts[$table][] = $uid;
                 $escapedValues = array_map(fn($value) => is_null($value) ? 'NULL' : $this->pdo->quote((string) $value), $row);
                 $values[] = '(' . implode(', ', $escapedValues) . ')';
             }

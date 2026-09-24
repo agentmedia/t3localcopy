@@ -56,7 +56,7 @@ final class InsertAddReporter implements EventListenerInterface
             $uid = $data[$tableConfig->getPrimaryColumn()] ?? '<not set>';
 
             $message = "Collected insert number: " . $this->numberOfEvents . ", table: " . $tableName . ", uid: " . $uid;
-            if ($this->verbosityLevel >= self::VERBOSITY_MEDIUM) {
+            if ($this->verbosityLevel == self::VERBOSITY_ALL) {
                 $message .= ", data: " . json_encode($data);
             }
             echo $message . "\n";

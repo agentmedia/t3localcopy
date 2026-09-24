@@ -23,8 +23,10 @@ class Exporter  {
 
     const EVENT_EXPORT_INTERRUPTED = 'exportInterrupted';
 
+    protected $continuousSqlDumpEnabled = false;
+
     protected ?ConfigTypeRegistry $configTypeRegistry;
-    public function __construct(array $config, ?ConfigTypeRegistry $configTypeRegistry = null, int $verbosityLevel = InsertAddReporter::VERBOSITY_NONE) {
+    public function __construct(array $config, ?ConfigTypeRegistry $configTypeRegistry = null, int $verbosityLevel = InsertAddReporter::VERBOSITY_NONE, string $sqlDumpType = InsertCollector::DUMP_TYPE_UPSERTS) {
         if ($verbosityLevel !== InsertAddReporter::VERBOSITY_NONE) {
             EventHandler::addListener(TableExtractor::EVENT_INSERT_QUERY_ADDED, new InsertAddReporter($verbosityLevel));
         }
@@ -42,6 +44,7 @@ class Exporter  {
         );
         $configReader = new ConfigReader($this->configTypeRegistry);
         $this->tableConfigRegistry = $configReader->read($this->config);
+        $this->insertCollector = new InsertCollector($this->pdo, $sqlDumpType);
     }
 
     public static function initCliInterruptHandling(): bool {
@@ -62,6 +65,17 @@ class Exporter  {
         });
         return true;
     }
+
+    /**
+     * Enables continuous SQL dump to a specified file handle in chunks. Helpful for handling large exports without consuming excessive memory.
+     *  @param mixed $fileHandle
+     * @param int $continuousChunkSize
+     * @return void
+     */
+    public function setContinuousSqlDumpFileHandle($fileHandle, int $continuousChunkSize = 10000): void {
+        $this->continuousSqlDumpEnabled = true;
+        $this->insertCollector->enableContinuousDumps($fileHandle, $continuousChunkSize);
+    }
     /**
      * Gets the table configuration registry. Allows to modify or inspect the table configurations before executing the export.
      * 
@@ -73,7 +87,6 @@ class Exporter  {
 
     public function execute(): void {
         
-        $this->insertCollector = new InsertCollector($this->pdo);
         $this->performExplicitSelects($this->tableConfigRegistry);
         $commonConfig = $this->config['common'] ?? [];
         $noFiles = $commonConfig['noFiles'] ?? false;
@@ -112,16 +125,16 @@ class Exporter  {
         }
     }
 
-    public function getInsertsSql(): string {
-        return $this->insertCollector ? $this->insertCollector->getInsertsString() : '';
+    public function getSqlString(): string {
+        if ($this->continuousSqlDumpEnabled) {
+            throw new \LogicException('Method getSqlString() makes no sense in conjunction with continuous SQL dump.');
+        }
+        return $this->insertCollector ? $this->insertCollector->getSqlString() : '';
     }
 
     public function getCollectedFiles(): array {
         return $this->fileCollectListener ? $this->fileCollectListener->getCollectedFiles() : [];
     }
 
-    public function getUpsertsSql(): string {
-        return $this->insertCollector ? $this->insertCollector->getUpsertsString() : '';
-    }
 
 }

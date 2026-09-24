@@ -8,6 +8,7 @@ use AgentMedia\T3LocalCopy\TableConfigurations\TableConfig;
 use AgentMedia\T3LocalCopy\EventHandling\EventHandler;
 
 class TableExtractor {
+    public static $extractionInterrupted = false;
     protected TableConfig $tableConfig;
     protected \PDO $pdo;
     protected TableConfigRegistry $tableConfigRegistry;
@@ -47,6 +48,9 @@ class TableExtractor {
     }
 
     public function collectInsertQueries($uid): bool {
+        if (self::$extractionInterrupted) {
+            return false;
+        }
         if ($this->insertCollector->hasInsert($this->tableConfig->getTableName(), $uid)) {
             return false;
         }

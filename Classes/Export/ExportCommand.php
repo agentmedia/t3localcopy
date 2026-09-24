@@ -1,6 +1,9 @@
 <?php
 namespace AgentMedia\T3LocalCopy\Export;
 
+use AgentMedia\T3LocalCopy\DatabaseExtractor\TableExtractor;
+use AgentMedia\T3LocalCopy\EventHandling\EventHandler;
+
 
 
 /**
@@ -21,7 +24,13 @@ final class ExportCommand
     }
     public function execute()
     {   
+        if (Exporter::initCliInterruptHandling()) {
+            echo "You can interrupt the export process gracefully using Ctrl+C.\n";
+        }
+    
         $cliArguments = $this->readCliArguments();
+        $verbosity = (int)($cliArguments['verbosity'] ?? InsertAddtListener::VERBOSITY_NONE);
+
         $rootPageUid = (int)($cliArguments['rootPageUid'] ?? 0);
         $configFile = $cliArguments['configFile'];
         $filesFile = $cliArguments['filesFile'] ?? $this->defaultBaseDir . '/files.txt';
@@ -36,7 +45,7 @@ final class ExportCommand
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new \RuntimeException('Failed to parse config file: ' . json_last_error_msg());
         }
-        $exporter = new Exporter($config, null);
+        $exporter = new Exporter($config, null, $verbosity);
         $exporter->execute();
 
         if (file_put_contents($insertsFile, $exporter->getInsertsSql()) === false) {
@@ -45,18 +54,17 @@ final class ExportCommand
         if (file_put_contents($filesFile, implode(PHP_EOL, $exporter->getCollectedFiles())) === false) {
             throw new \RuntimeException("Failed to write to files file: $filesFile");
         }
-
-
-        // Check if the PDO connection was successful
-        // Further execution logic goes here
     }
 
     protected function readCliArguments()
     {
-        $options = getopt('', ['rootPageUid:', 'configFile:', 'insertsFile:', 'filesFile:']);
+        $options = getopt('', ['rootPageUid:', 'configFile:', 'insertsFile:', 'filesFile:', 'verbosity:']);
         // validate options
         if (!isset($options['configFile'])) {
             throw new \InvalidArgumentException('Missing required CLI arguments. You must provide a configFile');
+        }
+        if (!isset($options['verbosity'])) {
+            $options['verbosity'] = InsertAddtListener::VERBOSITY_NONE;
         }
         return $options;
     }
@@ -64,10 +72,16 @@ final class ExportCommand
     public function showHelp()
     {
         echo "Usage: php Export.php --configFile=path/to/config.json [--insertsFile=path/to/inserts.sql] [--filesFile=path/to/files.txt] [--rootPageUid=123]\n";
-        echo "  --configFile=path/to/config.json   Path to the JSON configuration file.\n";
-        echo "  --insertsFile=path/to/inserts.sql   (Optional) Path to the SQL inserts file. By default, it is set to __DIR__/inserts.sql\n";
-        echo "  --filesFile=path/to/files.txt   (Optional) Path to the text file containing the collection of files. By default, it is set to __DIR__/files.txt\n";
-        echo "  --rootPageUid=123                  (Optional) Root page UID for the export. If not provided, it is taken from the config file, config path: common.rootPageUid\n";
+        echo "  --configFile=path/to/config.json   (String, Required) Path to the JSON configuration file.\n";
+        echo "  --insertsFile=path/to/inserts.sql   (String, Optional) Path to the SQL inserts file. By default, it is set to __DIR__/inserts.sql\n";
+        echo "  --filesFile=path/to/files.txt   (String, Optional) Path to the text file containing the collection of files. By default, it is set to __DIR__/files.txt\n";
+        echo "  --rootPageUid=123                  (Integer, Optional) Root page UID for the export. If not provided, it is taken from the config file, config path: common.rootPageUid\n";
+        echo "  --verbosity=LEVEL                  (Integer, Optional) Verbosity level for insert event reporting. Possible values are:\n";
+        echo "                                      0: None (default setting)\n";
+        echo "                                      1: Low\n";
+        echo "                                      2: Medium\n";
+        echo "                                      3: High\n";
+        echo "                                      4: All\n";
     }
 }
 

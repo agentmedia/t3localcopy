@@ -5,13 +5,15 @@ use AgentMedia\T3LocalCopy\DatabaseExtractor\InsertCollector;
 use AgentMedia\T3LocalCopy\DatabaseExtractor\PageTreeExtractor;
 use AgentMedia\T3LocalCopy\DatabaseExtractor\TableExtractor;
 use AgentMedia\T3LocalCopy\EventHandling\EventHandler;
+use AgentMedia\T3LocalCopy\EventHandling\EventListenerInterface;
 use AgentMedia\T3LocalCopy\FileCollecting\FileCollectListener;
 use AgentMedia\T3LocalCopy\TableConfigurations\Reader\ConfigReader;
 use AgentMedia\T3LocalCopy\TableConfigurations\Reader\ConfigTypeRegistry;
 use AgentMedia\T3LocalCopy\TableConfigurations\TableConfig;
 use AgentMedia\T3LocalCopy\TableConfigurations\TableConfigRegistry;
 
-class Exporter {
+class Exporter  {
+
     protected array $config;
     protected \PDO $pdo;
 
@@ -20,8 +22,14 @@ class Exporter {
     protected ?FileCollectListener $fileCollectListener = null;
     protected ?TableConfigRegistry $tableConfigRegistry = null;
 
+    const EVENT_EXPORT_INTERRUPTED = 'exportInterrupted';
+
     protected ?ConfigTypeRegistry $configTypeRegistry;
-    public function __construct(array $config, ?ConfigTypeRegistry $configTypeRegistry = null) {
+    public function __construct(array $config, ?ConfigTypeRegistry $configTypeRegistry = null, int $verbosityLevel = InsertAddtListener::VERBOSITY_NONE) {
+        if ($verbosityLevel !== InsertAddtListener::VERBOSITY_NONE) {
+            EventHandler::addListener(TableExtractor::EVENT_INSERT_QUERY_ADDED, new InsertAddtListener($verbosityLevel));
+        }
+        EventHandler::addListener(self::EVENT_EXPORT_INTERRUPTED, new ExportInterruptionListener());
         $this->config = $config;
         $this->configTypeRegistry = $configTypeRegistry;
         $dbConf = $config['db'] ?? [];
@@ -35,9 +43,26 @@ class Exporter {
         );
         $configReader = new ConfigReader($this->configTypeRegistry);
         $this->tableConfigRegistry = $configReader->read($this->config);
-
     }
 
+    public static function initCliInterruptHandling(): bool {
+       if (!extension_loaded('pcntl')) {
+        return false;
+       }
+        pcntl_async_signals(true);
+        pcntl_signal(SIGINT, function () {
+            echo "Export interrupted.\n";
+            EventHandler::dispatchEvent(Exporter::EVENT_EXPORT_INTERRUPTED);
+            exit;
+        });
+
+        pcntl_signal(SIGTERM, function () {
+            echo "Export interrupted.\n";
+            EventHandler::dispatchEvent(Exporter::EVENT_EXPORT_INTERRUPTED);
+            exit;
+        });
+        return true;
+    }
     /**
      * Gets the table configuration registry. Allows to modify or inspect the table configurations before executing the export.
      * 

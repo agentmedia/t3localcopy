@@ -69,9 +69,12 @@ final class ExportCommand
         return $options;
     }
 
-    public function showHelp()
+    public function showHelp($commandName = '')
     {
-        echo "Usage: php Export.php --configFile=path/to/config.json [--insertsFile=path/to/inserts.sql] [--filesFile=path/to/files.txt] [--rootPageUid=123]\n";
+        if (!$commandName) {
+            $commandName = 'php ExportCommand.php';
+        }
+        echo "Usage: " . $commandName . " --configFile=path/to/config.json [--insertsFile=path/to/inserts.sql] [--filesFile=path/to/files.txt] [--rootPageUid=123]\n";
         echo "  --configFile=path/to/config.json   (String, Required) Path to the JSON configuration file.\n";
         echo "  --insertsFile=path/to/inserts.sql   (String, Optional) Path to the SQL inserts file. By default, it is set to __DIR__/inserts.sql\n";
         echo "  --filesFile=path/to/files.txt   (String, Optional) Path to the text file containing the collection of files. By default, it is set to __DIR__/files.txt\n";

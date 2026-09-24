@@ -19,6 +19,6 @@ try {
 } catch (\Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";
     if ($command) {
-        $command->showHelp();
+        $command->showHelp('t3PageTreeExport');
     }
 }

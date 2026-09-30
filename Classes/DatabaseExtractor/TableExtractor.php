@@ -287,7 +287,7 @@ class TableExtractor {
     protected function addInsertQueryFromSelect(string $tableName,string $whereQuery, array $placeholderValues): ?array {
         $data = $this->executeSelect($tableName, $whereQuery, $placeholderValues, '*');
         $firstRow = $data[0] ?? null;
-        if ($firstRow && $this->insertCollector->addInsert($tableName, $firstRow, $this->tableConfig->getPrimaryColumn())) {
+        if ($firstRow && $this->insertCollector->addInsert($tableName, $firstRow, $this->tableConfig->getPrimaryColumn(), $this->tableConfig->getOmitColumns())) {
             EventHandler::dispatchEvent(self::EVENT_INSERT_QUERY_ADDED, ['tableName' => $tableName, 'data' => $firstRow, 'tableConfig' => $this->tableConfig]);
         }
         return $firstRow;

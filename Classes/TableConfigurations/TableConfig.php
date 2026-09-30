@@ -19,10 +19,11 @@ class TableConfig {
     protected string $explicitSelectQuery = '';
     protected string $pidColumn = '';
     protected string $flexFormColumn = 'pi_flexform';
+    protected array $omitColumns = [];
 
     protected bool $includeParents = false;
 
-    public function __construct($tableName, $primaryColumn = 'uid', string $explicitSelectQuery = '', $l10nParentColumn = 'l10n_parent', $languageColumn = 'sys_language_uid', $pidColumn = '', bool $includeParents = false, string $flexFormColumn = 'pi_flexform') {
+    public function __construct($tableName, $primaryColumn = 'uid', string $explicitSelectQuery = '', $l10nParentColumn = 'l10n_parent', $languageColumn = 'sys_language_uid', $pidColumn = '', bool $includeParents = false, string $flexFormColumn = 'pi_flexform', array $omitColumns = []) {
         $this->tableName = $tableName;
         $this->primaryColumn = $primaryColumn;
         $this->explicitSelectQuery = $explicitSelectQuery;
@@ -31,6 +32,11 @@ class TableConfig {
         $this->pidColumn = $pidColumn;
         $this->includeParents = $includeParents;
         $this->flexFormColumn = $flexFormColumn;
+        $this->omitColumns = $omitColumns;
+    }
+
+    public function getOmitColumns(): array {
+        return $this->omitColumns;
     }
 
     public function getExplicitSelectQuery(): string {

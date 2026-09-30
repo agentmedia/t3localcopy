@@ -69,7 +69,7 @@ final class InsertCollector
         $dumpedPrimaryKeyValues = $this->dumpedInserts[$table] ?? [];
         return   isset($this->inserts[$table][$primaryKeyValue]) || \in_array($primaryKeyValue, $dumpedPrimaryKeyValues);
     }
-    public function addInsert(string $table, array $data, $primaryKeyColumn): bool
+    public function addInsert(string $table, array $data, $primaryKeyColumn, array $omitColumns = []): bool
     {
         $this->numCurrentInserts++;
         $this->primaryColumns[$table] = $primaryKeyColumn;
@@ -83,6 +83,9 @@ final class InsertCollector
         }
         if (isset($this->inserts[$table][$primaryKeyValue])) {
             return false;
+        }
+        foreach ($omitColumns as $omitColumn) {
+            unset($data[$omitColumn]);
         }
         $this->inserts[$table][$primaryKeyValue] = $data;
         $this->dumpIfRequired();

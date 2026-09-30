@@ -65,6 +65,7 @@ class ConfigReader {
             $this->addFlexFieldMultipleForeignTablesRelations($tableConfig, $tableConfigData['flexFieldMultipleForeignTableRelations'] ?? []);
             $this->addForeignChildRelation($tableConfig, $tableConfigData['foreignChildRelations'] ?? []);
             $this->addForeignParentRelations($tableConfig, $tableConfigData['foreignParentRelations'] ?? []);
+        
             $tableConfigRegistry->registerTableConfig($tableConfig);
         }
         return $tableConfigRegistry;
@@ -194,7 +195,8 @@ class ConfigReader {
             $tableConfigData['languageColumn'] ?? 'sys_language_uid',
             $tableConfigData['pidColumn'] ?? '',
             $tableConfigData['includeParents'] ?? false,
-            $tableConfigData['flexFormColumn'] ?? 'pi_flexform'
+            $tableConfigData['flexFormColumn'] ?? 'pi_flexform',
+            $tableConfigData['omitColumns'] ?? [],
         );
     }
 }

@@ -21,6 +21,8 @@ class PageTreeExtractor
 
     protected array $insertQueries = [];
 
+    protected static $currentRootLine = [];
+
     protected $rootPageUid;
     public function __construct($rootPageUid, \PDO $pdo, InsertCollector $insertCollector, TableConfigRegistry $tableConfigRegistry)
     {
@@ -38,8 +40,12 @@ class PageTreeExtractor
         $this->rootPageUid = $rootPageUid;
     }
 
+    public static function getCurrentRootLine(): array {
+        return self::$currentRootLine;
+    }
     public function extract() {
         $exportedPageUids = $this->getTreeIds($this->rootPageUid);
+        self::$currentRootLine = $exportedPageUids;
         $this->insertQueries = [];
         foreach ($exportedPageUids as $pageUid) {
             // This should do the whole database extraction

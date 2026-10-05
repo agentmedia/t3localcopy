@@ -2,6 +2,7 @@
 
 namespace AgentMedia\T3LocalCopy\TableConfigurations\Reader;
 
+use AgentMedia\T3LocalCopy\TableConfigurations\Condition\PageInRootlineCondition;
 use AgentMedia\T3LocalCopy\TableConfigurations\Reader\ConfigTypeRegistry;
 use AgentMedia\T3LocalCopy\TableConfigurations\Condition\DirectRecordCondition;
 use AgentMedia\T3LocalCopy\TableConfigurations\Condition\RecordConditionInterface;
@@ -48,6 +49,7 @@ class ConfigReader {
         if (!$configTypeRegistry) {
             $configTypeRegistry = new ConfigTypeRegistry();
             $configTypeRegistry->register(DirectRecordCondition::class, 'DirectRecordCondition');
+            $configTypeRegistry->register(PageInRootlineCondition::class, 'PageInRootlineCondition');
         }
         $this->configTypeRegistry = $configTypeRegistry;
     }

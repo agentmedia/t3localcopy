@@ -18,7 +18,14 @@ class TableExtractor {
 
     const EVENT_INSERT_QUERY_ADDED = 'TableExtractor__Insert_Query_Added';
 
-    
+    /**
+     * Constructs a TableExtractor instance.
+     *
+     * @param \PDO $pdo The PDO instance for database access.
+     * @param InsertCollector $insertCollector The insert collector for collecting insert queries.
+     * @param TableConfig $tableConfig The table configuration for the table to extract.
+     * @param TableConfigRegistry $tableConfigRegistry The table configuration registry.
+     */
     public function __construct(\PDO $pdo, InsertCollector $insertCollector, TableConfig $tableConfig, TableConfigRegistry $tableConfigRegistry) {
         $this->pdo = $pdo;
         $this->insertCollector = $insertCollector;
@@ -29,6 +36,12 @@ class TableExtractor {
     }
 
 
+    /**
+     * Collects insert queries for language overlay records related to the given default UID.
+     *
+     * @param int $defaultUid The UID of the default language record.
+     * @return void
+     */
     protected function collectLanguageOverlayInsertQueries($defaultUid) {
         $languageColumn = $this->tableConfig->getLanguageColumn();
         $l10nParentColumn = $this->tableConfig->getL10nParentColumn();
@@ -47,6 +60,12 @@ class TableExtractor {
         }
     }
 
+    /**
+     * Collects insert queries for the record with the given UID.
+     *
+     * @param int $uid The UID of the record to collect insert queries for.
+     * @return bool Returns true if the insert queries were collected, otherwise false.
+     */
     public function collectInsertQueries($uid): bool {
         if (self::$extractionInterrupted) {
             return false;
@@ -74,21 +93,6 @@ class TableExtractor {
         }
         return true;
     }
-
-    // protected function addTcaColumnForeignTableRelations(array $thisRecord) {
-    //     $relations = $this->tableConfig->getTcaColumnForeignTableRelations();
-    //     foreach ($relations as $relation) {
-    //         $allowedTables = [$relation['table']];
-    //         $this->processTcaColumnForeignTablesRelation($thisRecord, $relation['tcaColumn'], $relation['recordCondition'], $allowedTables);
-    //     }
-    // }
-
-    // protected function addTcaColumnMultipleForeignTableRelations(array $thisRecord) {
-    //     $relations = $this->tableConfig->getTcaColumnMultipleForeignTableRelations();
-    //     foreach ($relations as $relation) {
-    //         $this->processTcaColumnForeignTablesRelation($thisRecord, $relation['tcaColumn'], $relation['recordCondition'], $relation['allowedTables']);
-    //     }
-    // }
 
     protected function addForeignParentRelations(array $thisRecord) {
         $relations = $this->tableConfig->getForeignParentRelations();
@@ -276,12 +280,6 @@ class TableExtractor {
     }
     protected function getProcessableForeignTableConfig($table): ?TableConfig {
        return  $this->tableConfigRegistry->getTableConfig($table);
-       // $foreignTableConfig = $this->tableConfigRegistry->getTableConfig($table);
-        // if (!$foreignTableConfig) {
-        //     // Todo: log that the table is not configured
-        //     return null;
-        // }
-        // return $foreignTableConfig->getExplicitSelectQuery() ? null : $foreignTableConfig;
     }
 
     protected function addInsertQueryFromSelect(string $tableName,string $whereQuery, array $placeholderValues): ?array {

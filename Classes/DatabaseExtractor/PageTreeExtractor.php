@@ -24,6 +24,15 @@ class PageTreeExtractor
     protected static $currentRootLine = [];
 
     protected $rootPageUid;
+
+    /**
+     * Constructs a PageTreeExtractor instance.
+     *
+     * @param int|string $rootPageUid The UID of the root page to start the extraction from.
+     * @param \PDO $pdo The PDO instance for database access.
+     * @param InsertCollector $insertCollector The insert collector for collecting insert queries.
+     * @param TableConfigRegistry $tableConfigRegistry The table configuration registry.
+     */
     public function __construct($rootPageUid, \PDO $pdo, InsertCollector $insertCollector, TableConfigRegistry $tableConfigRegistry)
     {
         $this->pdo = $pdo;
@@ -40,9 +49,20 @@ class PageTreeExtractor
         $this->rootPageUid = $rootPageUid;
     }
 
+    /**
+     * Gets the current root line of the page tree, defined during the extraction process.
+     *
+     * @return array The array of page UIDs representing the current root line.
+     */
     public static function getCurrentRootLine(): array {
         return self::$currentRootLine;
     }
+
+    /**
+     * Extracts the page tree starting from the root page UID and collects insert queries for each page.
+     *
+     * @return void
+     */
     public function extract() {
         $exportedPageUids = $this->getTreeIds($this->rootPageUid);
         self::$currentRootLine = $exportedPageUids;
@@ -54,18 +74,6 @@ class PageTreeExtractor
         }
     }
 
-    // protected function getParentIds($pageId)
-    // {
-    //     $parentIds = [];
-    //     $currentId = $pageId;
-    //     while ($currentId) {
-    //         $currentId = $this->getParentId($currentId);
-    //         if ($currentId) {
-    //             $parentIds[] = $currentId;
-    //         }
-    //     }
-    //     return array_reverse($parentIds);
-    // }
 
     protected function getTreeIds($rootPageId)
     {
@@ -84,20 +92,4 @@ class PageTreeExtractor
         $result = $selectQuery->fetchAll(\PDO::FETCH_ASSOC);
         return array_column($result, $this->primaryColumn);
     }
-
-    // protected function getParentId($pageId)
-    // {
-    //     $selectQuery = $this->pdo->prepare('SELECT pid FROM ' . $this->tableName . ' WHERE ' . $this->languageColumn . ' = :langUid AND uid = :uid');
-    //     $selectQuery->execute(['langUid' => 0, 'uid' => $pageId]);
-    //     $result = $selectQuery->fetch(\PDO::FETCH_ASSOC);
-    //     return $result ? (int) $result['pid'] : null;
-    // }
-
-    // protected function getLanguageOverlayPageUids($defaultLanguagePageUid)
-    // {
-    //     $selectQuery = $this->pdo->prepare('SELECT ' . $this->primaryColumn . ' FROM ' . $this->tableName . ' WHERE ' . $this->languageColumn . ' != :langUid AND ' . $this->l10nParentColumn . ' = :l10nParent');
-    //     $selectQuery->execute(['langUid' => 0, 'l10nParent' => $defaultLanguagePageUid]);
-    //     $result = $selectQuery->fetchAll(\PDO::FETCH_ASSOC);
-    //     return array_column($result, $this->primaryColumn);
-    // }
 }

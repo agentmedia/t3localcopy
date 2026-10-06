@@ -6,6 +6,11 @@ final class TcaParser extends TcaLikeParserAbstract {
 
     private array $tca; 
 
+    /**
+     * Constructor for the TcaParser.
+     *
+     * @param array $tca The TCA configuration array.
+     */
     public function __construct(array $tca) {
         $this->tca = $tca;
     }
@@ -13,6 +18,8 @@ final class TcaParser extends TcaLikeParserAbstract {
     /**
      * 
      * Creates a TcaParser instance from a PHP file containing TCA configuration.
+     * 
+     * Note that this method may fail when called in a non-typo3 context, in case the TCA contains Typo3 classes or functions that are not available.
      * 
      * @param string $filePath The path to the PHP file containing the TCA configuration.
      * @param string $forTable The table name for which the TCA configuration is intended. If empty, it will be inferred from the file name.
@@ -34,6 +41,12 @@ final class TcaParser extends TcaLikeParserAbstract {
         return new self($tca);
     }
 
+    /**
+     * Gets the configuration fields that match the specified criteria.
+     *
+     * @param array $matchConfig The criteria to match against the TCA fields.
+     * @return array The configuration fields that match the specified criteria.
+     */
 
     public function getConfigFields(array $matchConfig): array {
         $result = [];
@@ -49,5 +62,4 @@ final class TcaParser extends TcaLikeParserAbstract {
             }
         return $result;
     }
-    // Implementation of TcaParser goes here
 }

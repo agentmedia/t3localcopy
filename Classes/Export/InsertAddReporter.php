@@ -26,8 +26,11 @@ final class InsertAddReporter implements EventListenerInterface
             self::VERBOSITY_HIGH,
         ];
     }
-
-    private $eventHandler;
+    /**
+     * Constructs an InsertAddReporter instance with the specified verbosity level.
+     * @param int $verbosityLevel The verbosity level for reporting insert actions.
+     * @throws \InvalidArgumentException Raised if the provided verbosity level is invalid.
+     */
     function __construct(int $verbosityLevel)
     {
         if (!in_array($verbosityLevel, $this->getVerbosityLevels())) {
@@ -36,7 +39,12 @@ final class InsertAddReporter implements EventListenerInterface
         $this->verbosityLevel = $verbosityLevel;
     }
 
-    // Class implementation goes here
+    /**
+     *
+     * Handles an event by reporting insert actions based on the verbosity level.
+     * @param array $args The event arguments containing tableName, data, and tableConfig.
+     * @return void
+     */
     public function handleEvent(array $args = []): void
     {
         $this->numberOfEvents++;
@@ -63,6 +71,11 @@ final class InsertAddReporter implements EventListenerInterface
         }
     }
 
+    /**
+     * Determines whether a report should be generated based on the current verbosity level and the number of events.
+     *
+     * @return bool Returns true if a report is required, otherwise false.
+     */
     private function isReportRequired(): bool
     {
         switch ($this->verbosityLevel) {
